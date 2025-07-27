@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Web App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+</head>
+<body>
+    <h1>Secure Web Application</h1>
+    
+    <!-- 1. XSS Mitigation -->
+    <div>
+        <h2>1. XSS Mitigation</h2>
+        <p>Enter your name (secure against XSS):</p>
+        <input type="text" id="userInputSecure" placeholder="Enter text">
+        <button onclick="displayInputSecure()">Submit</button>
+        <div id="outputSecure"></div>
+        
+        <script>
+            function displayInputSecure() {
+                const userInput = document.getElementById('userInputSecure').value;
+                // Secure code: Using textContent instead of innerHTML
+                const output = document.getElementById('outputSecure');
+                output.textContent = "Hello, " + userInput + "!";
+                
+                // Alternative: If you must use HTML, use DOMPurify
+                // output.innerHTML = "Hello, " + DOMPurify.sanitize(userInput) + "!";
+            }
+        </script>
+    </div>
+
+    <!-- 2. eval() Mitigation -->
+    <div style="margin-top: 30px;">
+        <h2>2. Safe Calculation</h2>
+        <p>Enter a calculation (e.g., 2+2):</p>
+        <input type="text" id="calculationSecure" placeholder="Enter numbers and basic operators only">
+        <button onclick="calculateSecure()">Calculate</button>
+        <p id="resultSecure"></p>
+        
+        <script>
+            function calculateSecure() {
+                const calculation = document.getElementById('calculationSecure').value;
+                const resultElement = document.getElementById('resultSecure');
+                
+                // Secure code: Validate input and use a safe evaluation method
+                if (!/^[0-9+\-*/.()\s]+$/.test(calculation)) {
+                    resultElement.textContent = "Error: Only numbers and basic math operators are allowed";
+                    return;
+                }
+                
+                try {
+                    // Use Function constructor as a safer alternative to eval()
+                    const result = new Function('return ' + calculation)();
+                    
+                    // Additional validation to ensure the result is a number
+                    if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+                        throw new Error("Invalid calculation");
+                    }
+                    
+                    resultElement.textContent = "Result: " + result;
+                } catch (e) {
+                    resultElement.textContent = "Error: " + e.message;
+                }
+            }
+        </script>
+    </div>
+
+    <div style="margin-top: 30px; color: green;">
+        <h3>Security Measures Implemented:</h3>
+        <ul>
+            <li>Using textContent instead of innerHTML to prevent HTML/JS injection</li>
+            <li>Input validation to allow only expected characters</li>
+            <li>Using safer alternatives to eval() when possible</li>
+            <li>Proper error handling and input sanitization</li>
+            <li>Content Security Policy (CSP) headers should also be set server-side</li>
+        </ul>
+    </div>
+</body>
+</html>
